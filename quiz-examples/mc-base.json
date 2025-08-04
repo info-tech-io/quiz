@@ -1,0 +1,30 @@
+{
+  "config": {
+    "type": "multiple-choice",
+    "showExplanation": "none"
+  },
+"question":  {
+    "en": "Which tags are block tags?",
+    "ru": "Какие теги блочные?"
+  },
+  "answers": [
+    { "text": {
+        "en": "<div>",
+        "ru": "<div>"
+      },
+      "correct": true
+    },
+    { "text": {
+        "en": "<span>",
+        "ru": "<span>"
+      },
+      "correct": false
+    },
+    { "text": {
+        "en": "<p>",
+        "ru": "<p>"
+      },
+      "correct": true
+    }
+  ]
+}

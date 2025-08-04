@@ -1,0 +1,34 @@
+{
+  "config": {
+    "type": "single-choice",
+    "showExplanation": "selected"
+  },
+  "question": {
+    "en": "Which tag is the most important?",
+    "ru": "Какой тег является самым важным?"
+  },
+  "answers": [
+    {
+      "text": {
+        "en": "<h1>",
+        "ru": "<h1>"
+      },
+      "correct": true,
+      "description": {
+        "en": "Correct, h1 is the most important.",
+        "ru": "Верно, h1 - самый важный."
+      }
+    },
+    {
+      "text": {
+        "en": "<h6>",
+        "ru": "<h6>"
+      },
+      "correct": false,
+      "description": {
+        "en": "Incorrect, h6 is the least important.",
+        "ru": "Неверно, h6 - наименее важный."
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "config": {
+    "type": "single-choice",
+    "showExplanation": "none"
+  },
+  "question": {
+    "en": "Which tag is the most important?",
+    "ru": "Какой тег является самым важным?"
+  },
+  "answers": [
+    {
+      "text": {
+        "en": "<h1>",
+        "ru": "<h1>"
+      },
+      "correct": true
+    },
+    {
+      "text": {
+        "en": "<h6>",
+        "ru": "<h6>"
+      },
+      "correct": false
+    }
+  ]
+}

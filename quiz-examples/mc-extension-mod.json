@@ -1,0 +1,42 @@
+{
+  "config": {
+    "type": "multiple-choice",
+    "showExplanation": "all"
+  },
+  "question":  {
+    "en": "Which tags are block tags?",
+    "ru": "Какие теги блочные?"
+  },
+  "answers": [
+    { "text": {
+        "en": "<div>",
+        "ru": "<div>"
+      },
+      "correct": true,
+      "description": {
+        "en": "Correct, div is a block tags.",
+        "ru": "Верно, div - блочный тег."
+      }
+    },
+    { "text": {
+        "en": "<span>",
+        "ru": "<span>"
+      },
+      "correct": false,
+      "description": {
+        "en": "Incorrect, span is a line tag.",
+        "ru": "Неверно, span - строчный тег."
+      }
+    },
+    { "text": {
+        "en": "<p>",
+        "ru": "<p>"
+      },
+      "correct": true,
+      "description": {
+        "en": "Correct, p is a block tags.",
+        "ru": "Верно, p - блочный тег."
+      }
+    }
+  ]
+}

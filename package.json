@@ -1,0 +1,28 @@
+{
+  "name": "testcases",
+  "version": "1.0.0",
+  "description": "Этот репозиторий представляет собой коллекцию готовых шаблонов для создания интерактивных проверочных заданий с использованием чистого HTML и JavaScript. Ключевая особенность всех шаблонов — полное отделение логики отображения от содержания задания. Данные для каждого теста (вопросы, ответы, объяснения) хранятся в отдельном `quiz-data.json` файле, что позволяет легко создавать новые тесты, не изменяя основной код.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/info-tech-io/testcases.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/info-tech-io/testcases/issues"
+  },
+  "homepage": "https://github.com/info-tech-io/testcases#readme",
+  "devDependencies": {
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5"
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
+  }
+}

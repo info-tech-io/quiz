@@ -1,0 +1,9 @@
+{
+  "checkAnswer": "Check Answer",
+  "correct": "Correct!",
+  "incorrect": "Incorrect.",
+  "pleaseSelect": "Please select an answer.",
+  "errorLoading": "Failed to load the quiz. Check the file path and its content.",
+  "errorNoSrc": "Error: Quiz data source not specified (data-quiz-src).",
+  "errorUnknownType": "Configuration error: unknown quiz type"
+}

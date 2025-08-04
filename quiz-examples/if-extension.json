@@ -1,0 +1,19 @@
+{
+  "config": {
+    "type": "input-field",
+    "caseSensitive": true,
+    "showExplanationOnError": true
+  },
+  "question": {
+    "en": "What language is used for styles?",
+    "ru": "Какой язык для стилей?"
+  },
+  "answer": {
+        "en": "CSS",
+        "ru": "CSS"
+  },
+  "explanation": {
+        "en": "The correct answer is CSS.",
+        "ru": "Правильный ответ: CSS."
+  }
+}
