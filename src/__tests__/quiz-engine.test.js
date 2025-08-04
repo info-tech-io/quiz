@@ -34,10 +34,13 @@ const initQuiz = (quizFileName, lang = 'ru') => {
     // Mock fetch to handle both quiz data and locale files
     global.fetch = jest.fn((url) => {
         let filePath;
-        if (url.startsWith('quiz-engine/locales/')) {
-             filePath = path.resolve(__dirname, '..', url);
+        if (url.startsWith('/src/quiz-engine/locales/')) {
+             // The URL is root-relative, so we resolve it from the project root.
+             // __dirname is .../src/__tests__, so project root is two levels up.
+             filePath = path.resolve(__dirname, '../..', url.substring(1));
         } else if (url.includes('.json')) {
-            filePath = path.resolve(__dirname, '../quiz-examples', url);
+            // This handles the quiz data files, which are not root-relative in the test setup.
+            filePath = path.resolve(__dirname, '../../quiz-examples', url);
         } else {
             return Promise.reject(new Error(`Unknown fetch URL: ${url}`));
         }

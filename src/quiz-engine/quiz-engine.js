@@ -18,9 +18,7 @@ function getLang() {
 }
 
 async function loadTranslations(lang) {
-    // Assuming the script is in quiz-engine/ and locales are in quiz-engine/locales/
-    // This path might need adjustment depending on the final deployment structure.
-    const response = await fetch(`quiz-engine/locales/${lang}.json`);
+    const response = await fetch(`/src/quiz-engine/locales/${lang}.json`);
     if (!response.ok) {
         throw new Error(`Could not load translation file for ${lang}`);
     }
