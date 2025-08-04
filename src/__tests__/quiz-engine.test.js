@@ -167,3 +167,73 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         expect(explanationElement.textContent).toBe('Правильный ответ: CSS.');
     });
 });
+
+describe('Quiz Engine - Multi-Quiz Isolation', () => {
+
+    // Helper to initialize multiple quizzes on the same page
+    const initMultipleQuizzes = (quizFiles, lang = 'ru') => {
+        urlGetSpy.mockImplementation(param => {
+            if (param === 'lang') return lang;
+            return null;
+        });
+
+        // Set up DOM with multiple containers
+        document.body.innerHTML = quizFiles
+            .map(file => `<div class="quiz-container" data-quiz-src="${file}"></div>`)
+            .join('<hr>');
+
+        // Mock fetch once for all quizzes
+        global.fetch = jest.fn((url) => {
+            let filePath;
+            if (url.startsWith('/src/quiz-engine/locales/')) {
+                 filePath = path.resolve(__dirname, '../..', url.substring(1));
+            } else if (url.includes('.json')) {
+                filePath = path.resolve(__dirname, '../../quiz-examples', url);
+            } else {
+                return Promise.reject(new Error(`Unknown fetch URL: ${url}`));
+            }
+
+            if (!fs.existsSync(filePath)) {
+                return Promise.reject(new Error(`File not found: ${filePath}`));
+            }
+
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(JSON.parse(fileContent)),
+            });
+        });
+
+        // Isolate and trigger the engine
+        jest.isolateModules(() => {
+            require('../quiz-engine/quiz-engine.js');
+        });
+        document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: true }));
+    };
+
+    test('должен изолировать логику объяснений между несколькими квизами', async () => {
+        initMultipleQuizzes(['sc-base.json', 'sc-extension.json'], 'ru');
+        await new Promise(process.nextTick); // Wait for quizzes to render
+
+        const quizContainers = document.querySelectorAll('.quiz-container');
+        const firstQuizContainer = quizContainers[0];
+        const secondQuizContainer = quizContainers[1];
+
+        // Action: Select an answer and check it in the *second* quiz
+        const secondQuizRadioButton = secondQuizContainer.querySelector('input[value="0"]');
+        const secondQuizCheckButton = secondQuizContainer.querySelector('button');
+
+        secondQuizRadioButton.click();
+        secondQuizCheckButton.click();
+        await new Promise(process.nextTick); // Wait for explanation to be processed
+
+        // Assertion 1: The first quiz should NOT have any explanation text
+        const firstQuizExplanation = firstQuizContainer.querySelector('p.explanation-text'); // Assuming a class for easier selection
+        expect(firstQuizExplanation).toBeNull();
+
+        // Assertion 2: The second quiz SHOULD have an explanation for the selected answer
+        const secondQuizExplanation = secondQuizContainer.querySelector('#answer-container-0 p');
+        expect(secondQuizExplanation).not.toBeNull();
+        expect(secondQuizExplanation.textContent).toContain('h1 — самый важный тег');
+    });
+});
