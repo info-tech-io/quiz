@@ -39,6 +39,8 @@ function getTranslated(content, lang) {
 
 // --- Main Logic ---
 
+let quizInstanceCounter = 0; // Global counter for quiz instances
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const lang = getLang();
@@ -48,7 +50,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         quizContainers.forEach(container => {
             const quizSrc = container.dataset.quizSrc;
             if (quizSrc) {
-                loadQuiz(container, quizSrc, lang, ui);
+                quizInstanceCounter++;
+                loadQuiz(container, quizSrc, lang, ui, quizInstanceCounter);
             } else {
                 container.innerHTML = `<p style="color: red;">${ui.errorNoSrc}</p>`;
             }
@@ -62,21 +65,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-async function loadQuiz(container, src, lang, ui) {
+async function loadQuiz(container, src, lang, ui, instanceId) {
     try {
         const response = await fetch(src);
         if (!response.ok) {
             throw new Error(`Failed to load file: ${response.statusText}`);
         }
         const data = await response.json();
-        buildQuiz(container, data, lang, ui);
+        buildQuiz(container, data, lang, ui, instanceId);
     } catch (error) {
         console.error('Error loading or processing quiz data:', error);
         container.innerHTML = `<p style="color: red;">${ui.errorLoading}</p>`;
     }
 }
 
-function buildQuiz(container, data, lang, ui) {
+function buildQuiz(container, data, lang, ui, instanceId) {
     const config = data.config || {};
     container.innerHTML = '';
 
@@ -91,10 +94,10 @@ function buildQuiz(container, data, lang, ui) {
     switch (config.type) {
         case 'single-choice':
         case 'multiple-choice':
-            buildChoiceQuiz(form, data, lang);
+            buildChoiceQuiz(form, data, lang, instanceId);
             break;
         case 'input-field':
-            buildInputFieldQuiz(form, data);
+            buildInputFieldQuiz(form, data, instanceId);
             break;
         default:
             container.innerHTML = `<p style="color: red;">${ui.errorUnknownType} "${config.type}".</p>`;
@@ -110,7 +113,7 @@ function buildQuiz(container, data, lang, ui) {
     container.appendChild(messagesContainer);
 
     checkButton.addEventListener('click', () => {
-        checkAnswer(form, messagesContainer, data, lang, ui);
+        checkAnswer(form, messagesContainer, data, lang, ui, instanceId);
         checkButton.style.display = 'none';
         form.querySelectorAll('input').forEach(input => input.disabled = true);
     });
@@ -118,21 +121,25 @@ function buildQuiz(container, data, lang, ui) {
 
 // --- Builders ---
 
-function buildChoiceQuiz(form, data, lang) {
+function buildChoiceQuiz(form, data, lang, instanceId) {
     const inputType = data.config.type === 'single-choice' ? 'radio' : 'checkbox';
+    const name = `answer-group-${instanceId}`; // Unique name for radio button group
     data.answers.forEach((answer, index) => {
+        const answerContainerId = `quiz-${instanceId}-answer-container-${index}`;
+        const inputId = `quiz-${instanceId}-answer-${index}`;
+
         const answerContainer = document.createElement('div');
-        answerContainer.id = `answer-container-${index}`;
+        answerContainer.id = answerContainerId;
         answerContainer.style.marginBottom = '10px';
 
         const input = document.createElement('input');
         input.type = inputType;
-        input.id = `answer-${index}`;
-        input.name = 'answer';
+        input.id = inputId;
+        input.name = name; // Use unique name
         input.value = index;
 
         const label = document.createElement('label');
-        label.htmlFor = `answer-${index}`;
+        label.htmlFor = inputId;
         label.textContent = ` ${getTranslated(answer.text, lang)}`;
 
         answerContainer.appendChild(input);
@@ -141,27 +148,28 @@ function buildChoiceQuiz(form, data, lang) {
     });
 }
 
-function buildInputFieldQuiz(form, data) {
+function buildInputFieldQuiz(form, data, instanceId) {
+    const inputId = `quiz-${instanceId}-answer-input`;
     const input = document.createElement('input');
     input.type = 'text';
-    input.id = 'answer-input';
+    input.id = inputId;
     input.name = 'answer';
     form.appendChild(input);
 }
 
 // --- Checkers ---
 
-function checkAnswer(form, messagesContainer, data, lang, ui) {
+function checkAnswer(form, messagesContainer, data, lang, ui, instanceId) {
     const config = data.config;
     let isCorrect = false;
 
     switch (config.type) {
         case 'single-choice':
         case 'multiple-choice':
-            isCorrect = checkChoiceAnswer(form, data, lang);
+            isCorrect = checkChoiceAnswer(form, data, lang, instanceId);
             break;
         case 'input-field':
-            isCorrect = checkInputFieldAnswer(form, messagesContainer, data, lang);
+            isCorrect = checkInputFieldAnswer(form, messagesContainer, data, lang, instanceId);
             break;
     }
 
@@ -171,9 +179,10 @@ function checkAnswer(form, messagesContainer, data, lang, ui) {
     messagesContainer.appendChild(resultElement);
 }
 
-function checkChoiceAnswer(form, data, lang) {
+function checkChoiceAnswer(form, data, lang, instanceId) {
     const config = data.config;
-    const selectedInputs = Array.from(form.querySelectorAll('input[name="answer"]:checked'));
+    const name = `answer-group-${instanceId}`; // Use the unique name to select inputs
+    const selectedInputs = Array.from(form.querySelectorAll(`input[name="${name}"]:checked`));
     const selectedIndices = selectedInputs.map(input => parseInt(input.value, 10));
 
     const correctIndices = data.answers
@@ -184,17 +193,18 @@ function checkChoiceAnswer(form, data, lang) {
                       selectedIndices.every(index => correctIndices.includes(index));
 
     if (config.showExplanation === 'selected') {
-        selectedIndices.forEach(index => showDescription(index, data, lang));
+        selectedIndices.forEach(index => showDescription(index, data, lang, instanceId));
     } else if (config.showExplanation === 'all') {
-        data.answers.forEach((_, index) => showDescription(index, data, lang));
+        data.answers.forEach((_, index) => showDescription(index, data, lang, instanceId));
     }
     
     return isCorrect;
 }
 
-function checkInputFieldAnswer(form, messagesContainer, data, lang) {
+function checkInputFieldAnswer(form, messagesContainer, data, lang, instanceId) {
     const config = data.config;
-    const userInput = form.querySelector('#answer-input').value.trim();
+    const inputId = `quiz-${instanceId}-answer-input`;
+    const userInput = form.querySelector(`#${inputId}`).value.trim();
     const correctAnswer = getTranslated(data.answer, lang);
 
     const isCorrect = config.caseSensitive 
@@ -214,7 +224,7 @@ function checkInputFieldAnswer(form, messagesContainer, data, lang) {
 
 // --- Helpers ---
 
-function showDescription(index, data, lang) {
+function showDescription(index, data, lang, instanceId) {
     const answer = data.answers[index];
     const descriptionText = getTranslated(answer.description, lang);
     if (!descriptionText) return;
@@ -225,7 +235,8 @@ function showDescription(index, data, lang) {
     descriptionElement.style.fontStyle = 'italic';
     descriptionElement.style.color = answer.correct ? 'green' : 'red';
 
-    const answerContainer = document.getElementById(`answer-container-${index}`);
+    const answerContainerId = `quiz-${instanceId}-answer-container-${index}`; // Construct unique ID
+    const answerContainer = document.getElementById(answerContainerId); // Find unique element
     if (answerContainer) {
         answerContainer.appendChild(descriptionElement);
     }

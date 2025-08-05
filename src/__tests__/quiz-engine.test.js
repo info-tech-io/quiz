@@ -7,9 +7,16 @@ const path = require('path');
 
 let urlGetSpy;
 
+// This function is called before each test to reset the environment
 beforeEach(() => {
     // Spy on the 'get' method of URLSearchParams prototype
     urlGetSpy = jest.spyOn(URLSearchParams.prototype, 'get');
+    
+    // Reset the DOM
+    document.body.innerHTML = '';
+
+    // Reset Jest's module registry to ensure the quiz engine script is re-executed
+    jest.resetModules();
 });
 
 afterEach(() => {
@@ -17,29 +24,20 @@ afterEach(() => {
     urlGetSpy.mockRestore();
 });
 
-// Main helper to initialize a quiz
+// Main helper to initialize a single quiz
 const initQuiz = (quizFileName, lang = 'ru') => {
-    // Mock the return value of 'get' specifically for the 'lang' parameter
-    urlGetSpy.mockImplementation(param => {
-        if (param === 'lang') {
-            return lang;
-        }
-        return null;
-    });
+    // Mock the return value of 'get' for the 'lang' parameter
+    urlGetSpy.mockImplementation(param => (param === 'lang' ? lang : null));
 
-    // Set up DOM
-    const html = `<div class="quiz-container" data-quiz-src="${quizFileName}"></div>`;
-    document.body.innerHTML = html;
+    // Set up DOM for a single quiz
+    document.body.innerHTML = `<div class="quiz-container" data-quiz-src="${quizFileName}"></div>`;
 
     // Mock fetch to handle both quiz data and locale files
     global.fetch = jest.fn((url) => {
         let filePath;
         if (url.startsWith('/src/quiz-engine/locales/')) {
-             // The URL is root-relative, so we resolve it from the project root.
-             // __dirname is .../src/__tests__, so project root is two levels up.
-             filePath = path.resolve(__dirname, '../..', url.substring(1));
+            filePath = path.resolve(__dirname, '../..', url.substring(1));
         } else if (url.includes('.json')) {
-            // This handles the quiz data files, which are not root-relative in the test setup.
             filePath = path.resolve(__dirname, '../../quiz-examples', url);
         } else {
             return Promise.reject(new Error(`Unknown fetch URL: ${url}`));
@@ -56,12 +54,10 @@ const initQuiz = (quizFileName, lang = 'ru') => {
         });
     });
 
-    // Isolate module loading to ensure a clean start for each test
-    jest.isolateModules(() => {
-        require('../quiz-engine/quiz-engine.js');
-    });
+    // Load and execute the quiz engine script
+    require('../quiz-engine/quiz-engine.js');
 
-    // Trigger the engine
+    // Trigger the DOMContentLoaded event to run the engine
     document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: true }));
 };
 
@@ -98,10 +94,12 @@ describe('Quiz Engine - Internationalization (i18n)', () => {
         initQuiz('sc-extension-mod.json', 'en');
         await new Promise(process.nextTick);
 
-        document.querySelector('input[value="0"]').click();
+        // Since this is the first (and only) quiz, its ID is 1
+        document.querySelector('#quiz-1-answer-0').click();
         document.querySelector('button').click();
+        await new Promise(process.nextTick);
 
-        const desc = document.querySelector('#answer-container-0 p');
+        const desc = document.querySelector('#quiz-1-answer-container-0 p');
         expect(desc.textContent).toBe('Correct, h1 is the most important.');
     });
 });
@@ -113,7 +111,7 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         initQuiz('sc-base.json', 'ru');
         await new Promise(process.nextTick);
 
-        document.querySelector('input[value="0"]').click();
+        document.querySelector('#quiz-1-answer-0').click();
         document.querySelector('button').click();
 
         const resultElement = document.querySelector('div > p');
@@ -125,7 +123,7 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         initQuiz('sc-base.json', 'ru');
         await new Promise(process.nextTick);
 
-        document.querySelector('input[value="1"]').click();
+        document.querySelector('#quiz-1-answer-1').click();
         document.querySelector('button').click();
 
         const resultElement = document.querySelector('div > p');
@@ -136,8 +134,8 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         initQuiz('mc-base.json', 'ru');
         await new Promise(process.nextTick);
 
-        document.querySelector('input[value="0"]').click();
-        document.querySelector('input[value="2"]').click();
+        document.querySelector('#quiz-1-answer-0').click();
+        document.querySelector('#quiz-1-answer-2').click();
         document.querySelector('button').click();
 
         const resultElement = document.querySelector('div > p');
@@ -148,7 +146,7 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         initQuiz('if-mod.json', 'ru');
         await new Promise(process.nextTick);
 
-        const input = document.querySelector('input[type="text"]');
+        const input = document.querySelector('#quiz-1-answer-input');
         input.value = 'cSS';
         document.querySelector('button').click();
 
@@ -160,7 +158,7 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         initQuiz('if-mod-extension.json', 'ru');
         await new Promise(process.nextTick);
 
-        document.querySelector('input[type="text"]').value = 'wrong';
+        document.querySelector('#quiz-1-answer-input').value = 'wrong';
         document.querySelector('button').click();
 
         const explanationElement = document.querySelector('div > p');
@@ -172,17 +170,12 @@ describe('Quiz Engine - Multi-Quiz Isolation', () => {
 
     // Helper to initialize multiple quizzes on the same page
     const initMultipleQuizzes = (quizFiles, lang = 'ru') => {
-        urlGetSpy.mockImplementation(param => {
-            if (param === 'lang') return lang;
-            return null;
-        });
+        urlGetSpy.mockImplementation(param => (param === 'lang' ? lang : null));
 
-        // Set up DOM with multiple containers
         document.body.innerHTML = quizFiles
             .map(file => `<div class="quiz-container" data-quiz-src="${file}"></div>`)
             .join('<hr>');
 
-        // Mock fetch once for all quizzes
         global.fetch = jest.fn((url) => {
             let filePath;
             if (url.startsWith('/src/quiz-engine/locales/')) {
@@ -204,36 +197,34 @@ describe('Quiz Engine - Multi-Quiz Isolation', () => {
             });
         });
 
-        // Isolate and trigger the engine
-        jest.isolateModules(() => {
-            require('../quiz-engine/quiz-engine.js');
-        });
+        require('../quiz-engine/quiz-engine.js');
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: true }));
     };
 
     test('должен изолировать логику объяснений между несколькими квизами', async () => {
         initMultipleQuizzes(['sc-base.json', 'sc-extension.json'], 'ru');
-        await new Promise(process.nextTick); // Wait for quizzes to render
+        await new Promise(process.nextTick);
 
         const quizContainers = document.querySelectorAll('.quiz-container');
         const firstQuizContainer = quizContainers[0];
         const secondQuizContainer = quizContainers[1];
 
-        // Action: Select an answer and check it in the *second* quiz
-        const secondQuizRadioButton = secondQuizContainer.querySelector('input[value="0"]');
+        // Action: Select an answer and check it in the *second* quiz (instance ID 2)
+        const secondQuizRadioButton = secondQuizContainer.querySelector('#quiz-2-answer-0');
         const secondQuizCheckButton = secondQuizContainer.querySelector('button');
 
         secondQuizRadioButton.click();
         secondQuizCheckButton.click();
-        await new Promise(process.nextTick); // Wait for explanation to be processed
+        await new Promise(process.nextTick);
 
-        // Assertion 1: The first quiz should NOT have any explanation text
-        const firstQuizExplanation = firstQuizContainer.querySelector('p.explanation-text'); // Assuming a class for easier selection
+        // Assertion 1: The first quiz should NOT have any explanation text.
+        // We check for any <p> tag inside any answer container of the first quiz.
+        const firstQuizExplanation = firstQuizContainer.querySelector('[id^="quiz-1-answer-container-"] p');
         expect(firstQuizExplanation).toBeNull();
 
-        // Assertion 2: The second quiz SHOULD have an explanation for the selected answer
-        const secondQuizExplanation = secondQuizContainer.querySelector('#answer-container-0 p');
+        // Assertion 2: The second quiz SHOULD have an explanation for the selected answer.
+        const secondQuizExplanation = secondQuizContainer.querySelector('#quiz-2-answer-container-0 p');
         expect(secondQuizExplanation).not.toBeNull();
-        expect(secondQuizExplanation.textContent).toContain('h1 — самый важный тег');
+        expect(secondQuizExplanation.textContent).toContain('Верно, h1 - самый важный.');
     });
 });
