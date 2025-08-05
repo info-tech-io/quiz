@@ -164,6 +164,43 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         const explanationElement = document.querySelector('div > p');
         expect(explanationElement.textContent).toBe('Правильный ответ: CSS.');
     });
+
+    test('должен сбрасывать квиз при нажатии на "Попробовать снова"', async () => {
+        initQuiz('sc-base.json', 'ru');
+        await new Promise(process.nextTick);
+
+        const quizContainer = document.querySelector('.quiz-container');
+        
+        // 1. Answer and check
+        quizContainer.querySelector('#quiz-1-answer-0').click();
+        quizContainer.querySelector('button[type="button"]').click();
+        await new Promise(process.nextTick);
+
+        // 2. Verify "Try Again" button appears and old button is hidden
+        const checkButtonBefore = quizContainer.querySelector('button[type="button"]');
+        expect(checkButtonBefore.style.display).toBe('none');
+
+        const allButtons = quizContainer.querySelectorAll('button');
+        const tryAgainButton = Array.from(allButtons).find(btn => btn.textContent === 'Попробовать снова');
+        expect(tryAgainButton).not.toBeNull();
+
+        // 3. Click "Try Again"
+        tryAgainButton.click();
+        await new Promise(process.nextTick);
+
+        // 4. Verify the quiz is reset
+        const checkButton = quizContainer.querySelector('button');
+        expect(checkButton).not.toBeNull();
+        expect(checkButton.textContent).toBe('Проверить ответ'); // Check button is back
+        expect(checkButton.style.display).not.toBe('none'); // It's visible
+
+        const inputs = quizContainer.querySelectorAll('input');
+        expect(inputs[0].disabled).toBe(false); // Inputs are enabled
+        expect(inputs[0].checked).toBe(false); // Inputs are reset
+
+        const resultMessage = quizContainer.querySelector('div > p');
+        expect(resultMessage).toBeNull(); // Old result message is gone
+    });
 });
 
 describe('Quiz Engine - Multi-Quiz Isolation', () => {

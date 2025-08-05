@@ -113,7 +113,7 @@ function buildQuiz(container, data, lang, ui, instanceId) {
     container.appendChild(messagesContainer);
 
     checkButton.addEventListener('click', () => {
-        checkAnswer(form, messagesContainer, data, lang, ui, instanceId);
+        checkAnswer(container, form, messagesContainer, data, lang, ui, instanceId);
         checkButton.style.display = 'none';
         form.querySelectorAll('input').forEach(input => input.disabled = true);
     });
@@ -159,7 +159,7 @@ function buildInputFieldQuiz(form, data, instanceId) {
 
 // --- Checkers ---
 
-function checkAnswer(form, messagesContainer, data, lang, ui, instanceId) {
+function checkAnswer(container, form, messagesContainer, data, lang, ui, instanceId) {
     const config = data.config;
     let isCorrect = false;
 
@@ -177,6 +177,16 @@ function checkAnswer(form, messagesContainer, data, lang, ui, instanceId) {
     resultElement.textContent = isCorrect ? ui.correct : ui.incorrect;
     resultElement.style.color = isCorrect ? 'green' : 'red';
     messagesContainer.appendChild(resultElement);
+
+    // Add a "Try Again" button
+    const tryAgainButton = document.createElement('button');
+    tryAgainButton.textContent = ui.tryAgain;
+    tryAgainButton.type = 'button';
+    tryAgainButton.style.marginLeft = '10px';
+    tryAgainButton.addEventListener('click', () => {
+        buildQuiz(container, data, lang, ui, instanceId);
+    });
+    messagesContainer.appendChild(tryAgainButton);
 }
 
 function checkChoiceAnswer(form, data, lang, instanceId) {
