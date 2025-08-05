@@ -173,20 +173,28 @@ function checkAnswer(container, form, messagesContainer, data, lang, ui, instanc
             break;
     }
 
+    // Style the container for inline layout
+    messagesContainer.style.display = 'flex';
+    messagesContainer.style.alignItems = 'center';
+    messagesContainer.style.marginTop = '10px';
+
     const resultElement = document.createElement('p');
     resultElement.textContent = isCorrect ? ui.correct : ui.incorrect;
     resultElement.style.color = isCorrect ? 'green' : 'red';
+    resultElement.style.margin = '0'; // Reset default margin for p
     messagesContainer.appendChild(resultElement);
 
-    // Add a "Try Again" button
-    const tryAgainButton = document.createElement('button');
-    tryAgainButton.textContent = ui.tryAgain;
-    tryAgainButton.type = 'button';
-    tryAgainButton.style.marginLeft = '10px';
-    tryAgainButton.addEventListener('click', () => {
-        buildQuiz(container, data, lang, ui, instanceId);
-    });
-    messagesContainer.appendChild(tryAgainButton);
+    // Add a "Try Again" button only if the answer is incorrect
+    if (!isCorrect) {
+        const tryAgainButton = document.createElement('button');
+        tryAgainButton.textContent = ui.tryAgain;
+        tryAgainButton.type = 'button';
+        tryAgainButton.style.marginLeft = '10px';
+        tryAgainButton.addEventListener('click', () => {
+            buildQuiz(container, data, lang, ui, instanceId);
+        });
+        messagesContainer.appendChild(tryAgainButton);
+    }
 }
 
 function checkChoiceAnswer(form, data, lang, instanceId) {

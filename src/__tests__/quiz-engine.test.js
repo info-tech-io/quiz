@@ -165,41 +165,57 @@ describe('Quiz Engine - Core Logic (with i18n)', () => {
         expect(explanationElement.textContent).toBe('Правильный ответ: CSS.');
     });
 
-    test('должен сбрасывать квиз при нажатии на "Попробовать снова"', async () => {
-        initQuiz('sc-base.json', 'ru');
-        await new Promise(process.nextTick);
+    describe('"Попробовать снова" button', () => {
+        test('должна появляться при неверном ответе и сбрасывать квиз', async () => {
+            initQuiz('sc-base.json', 'ru');
+            await new Promise(process.nextTick);
+    
+            const quizContainer = document.querySelector('.quiz-container');
+            
+            // 1. Give an INCORRECT answer and check
+            quizContainer.querySelector('#quiz-1-answer-1').click(); // Incorrect answer
+            quizContainer.querySelector('button[type="button"]').click();
+            await new Promise(process.nextTick);
+    
+            // 2. Verify "Try Again" button appears
+            const allButtons = quizContainer.querySelectorAll('button');
+            const tryAgainButton = Array.from(allButtons).find(btn => btn.textContent === 'Попробовать снова');
+            expect(tryAgainButton).not.toBeNull();
+    
+            // 3. Click "Try Again"
+            tryAgainButton.click();
+            await new Promise(process.nextTick);
+    
+            // 4. Verify the quiz is reset
+            const checkButton = quizContainer.querySelector('button');
+            expect(checkButton).not.toBeNull();
+            expect(checkButton.textContent).toBe('Проверить ответ');
+            expect(checkButton.style.display).not.toBe('none');
+    
+            const inputs = quizContainer.querySelectorAll('input');
+            expect(inputs[1].disabled).toBe(false);
+            expect(inputs[1].checked).toBe(false);
+    
+            const resultMessage = quizContainer.querySelector('div > p');
+            expect(resultMessage).toBeNull();
+        });
 
-        const quizContainer = document.querySelector('.quiz-container');
-        
-        // 1. Answer and check
-        quizContainer.querySelector('#quiz-1-answer-0').click();
-        quizContainer.querySelector('button[type="button"]').click();
-        await new Promise(process.nextTick);
-
-        // 2. Verify "Try Again" button appears and old button is hidden
-        const checkButtonBefore = quizContainer.querySelector('button[type="button"]');
-        expect(checkButtonBefore.style.display).toBe('none');
-
-        const allButtons = quizContainer.querySelectorAll('button');
-        const tryAgainButton = Array.from(allButtons).find(btn => btn.textContent === 'Попробовать снова');
-        expect(tryAgainButton).not.toBeNull();
-
-        // 3. Click "Try Again"
-        tryAgainButton.click();
-        await new Promise(process.nextTick);
-
-        // 4. Verify the quiz is reset
-        const checkButton = quizContainer.querySelector('button');
-        expect(checkButton).not.toBeNull();
-        expect(checkButton.textContent).toBe('Проверить ответ'); // Check button is back
-        expect(checkButton.style.display).not.toBe('none'); // It's visible
-
-        const inputs = quizContainer.querySelectorAll('input');
-        expect(inputs[0].disabled).toBe(false); // Inputs are enabled
-        expect(inputs[0].checked).toBe(false); // Inputs are reset
-
-        const resultMessage = quizContainer.querySelector('div > p');
-        expect(resultMessage).toBeNull(); // Old result message is gone
+        test('не должна появляться при верном ответе', async () => {
+            initQuiz('sc-base.json', 'ru');
+            await new Promise(process.nextTick);
+    
+            const quizContainer = document.querySelector('.quiz-container');
+            
+            // 1. Give a CORRECT answer and check
+            quizContainer.querySelector('#quiz-1-answer-0').click(); // Correct answer
+            quizContainer.querySelector('button[type="button"]').click();
+            await new Promise(process.nextTick);
+    
+            // 2. Verify "Try Again" button does NOT appear
+            const allButtons = quizContainer.querySelectorAll('button');
+            const tryAgainButton = Array.from(allButtons).find(btn => btn.textContent === 'Попробовать снова');
+            expect(tryAgainButton).toBeUndefined();
+        });
     });
 });
 
