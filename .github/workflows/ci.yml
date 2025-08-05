@@ -1,0 +1,41 @@
+# .github/workflows/ci.yml
+
+# Название воркфлоу, которое будет отображаться в GitHub
+name: Run Tests
+
+# Триггеры для запуска:
+on:
+  # 1. При push в ветку main
+  push:
+    branches: [ main ]
+  # 2. При создании или обновлении Pull Request на ветку main
+  pull_request:
+    branches: [ main ]
+
+# Задачи, которые нужно выполнить
+jobs:
+  # Название задачи (может быть любым)
+  build:
+    # ОС, на которой будут выполняться команды
+    runs-on: ubuntu-latest
+
+    # Шаги выполнения задачи
+    steps:
+      # Шаг 1: Клонирование вашего репозитория в виртуальную машину
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Шаг 2: Установка нужной версии Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm' # Кэширование зависимостей для ускорения последующих сборок
+
+      # Шаг 3: Уста��овка зависимостей
+      - name: Install dependencies
+        run: npm ci
+
+      # Шаг 4: Запуск тестов
+      - name: Run tests
+        run: npm test
