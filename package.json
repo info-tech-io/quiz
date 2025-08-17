@@ -4,7 +4,7 @@
   "description": "Этот репозиторий представляет собой коллекцию готовых шаблонов для создания интерактивных проверочных заданий с использованием чистого HTML и JavaScript. Ключевая особенность всех шаблонов — полное отделение логики отображения от содержания задания. Данные для каждого теста (вопросы, ответы, объяснения) хранятся в отдельном `quiz-data.json` файле, что позволяет легко создавать новые тесты, не изменяя основной код.",
   "main": "index.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,8 @@
   "homepage": "https://github.com/info-tech-io/testcases#readme",
   "devDependencies": {
     "jest": "^30.0.5",
-    "jest-environment-jsdom": "^30.0.5"
+    "jest-environment-jsdom": "^30.0.5",
+    "vitest": "^3.2.4"
   },
   "jest": {
     "testEnvironment": "jsdom"

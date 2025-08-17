@@ -6,7 +6,15 @@ import { getLang, getTranslated, loadTranslations } from './i18n.js';
 
 // --- Main Logic ---
 
-let quizInstanceCounter = 0;
+export let quizInstanceCounter = 0;
+
+/**
+ * Resets the quiz instance counter. Primarily used for testing purposes
+ * to ensure consistent quiz IDs across test runs.
+ */
+export function resetQuizInstanceCounter() {
+    quizInstanceCounter = 0;
+}
 
 async function loadQuizModule(type) {
     try {
@@ -83,7 +91,7 @@ async function buildQuiz(container, data, lang, ui, instanceId) {
     });
 }
 
-async function initializeQuizzes() {
+export async function initializeQuizzes() {
     try {
         const lang = getLang();
         const ui = await loadTranslations(lang);
