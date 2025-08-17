@@ -12,53 +12,121 @@ const __dirname = path.dirname(__filename);
 // Mock dynamic imports for quiz types
 vi.mock('../quiz-engine/quiz-types/single-choice.js', () => ({
   buildUI: vi.fn((form, data, lang, ui, instanceId) => {
-    // Simulate adding a radio button and its container for explanation
-    const answerOptionDiv = document.createElement('div');
-    answerOptionDiv.className = 'answer-option'; // Or whatever class is used
+    data.answers.forEach((answer, index) => {
+      const answerOptionDiv = document.createElement('div');
+      answerOptionDiv.className = 'answer-option';
+      answerOptionDiv.id = `quiz-${instanceId}-answer-container-${index}`;
 
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = `quiz-${instanceId}-answer`;
-    input.id = `quiz-${instanceId}-answer-0`;
-    answerOptionDiv.appendChild(input);
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = `quiz-${instanceId}-answer`;
+      input.id = `quiz-${instanceId}-answer-${index}`;
+      input.value = index.toString(); // Store index as value
+      answerOptionDiv.appendChild(input);
 
-    // Add a dummy label for completeness, though not strictly needed for this test
-    const label = document.createElement('label');
-    label.setAttribute('for', input.id);
-    label.textContent = 'Mock Answer'; // Placeholder
-    answerOptionDiv.appendChild(label);
+      const label = document.createElement('label');
+      label.setAttribute('for', input.id);
+      label.textContent = data.answers[index].text[lang] || data.answers[index].text.en;
+      answerOptionDiv.appendChild(label);
 
-    // This is the crucial part: the container for the explanation
-    const explanationContainer = document.createElement('div');
-    explanationContainer.id = `quiz-${instanceId}-answer-container-0`;
-    answerOptionDiv.appendChild(explanationContainer);
-
-    form.appendChild(answerOptionDiv);
+      form.appendChild(answerOptionDiv);
+    });
   }),
   checkAnswer: vi.fn((form, data, lang, instanceId) => {
-    // Simulate showing the explanation for the first answer (assuming it's correct)
-    const explanationContainer = document.querySelector(`#quiz-${instanceId}-answer-container-0`);
-    if (explanationContainer) {
-      const p = document.createElement('p');
-      // Get the translated description from data.answers[0].description
-      const translatedDescription = data.answers[0].description[lang] || data.answers[0].description.en; // Fallback to English
-      p.textContent = translatedDescription;
-      explanationContainer.appendChild(p);
+    const selectedInput = form.querySelector(`input[name="quiz-${instanceId}-answer"]:checked`);
+    if (!selectedInput) return false; // No answer selected
+
+    const selectedIndex = parseInt(selectedInput.value);
+    const isCorrect = data.answers[selectedIndex].correct;
+
+    const config = data.config || {};
+
+    // Simulate showDescription logic from single-choice.js
+    if (config.showExplanation === 'selected') {
+        const explanationContainer = document.querySelector(`#quiz-${instanceId}-answer-container-${selectedIndex}`);
+        if (explanationContainer && data.answers[selectedIndex].description) {
+            const p = document.createElement('p');
+            p.textContent = data.answers[selectedIndex].description[lang] || data.answers[selectedIndex].description.en;
+            explanationContainer.appendChild(p);
+        }
+    } else if (config.showExplanation === 'all') {
+        data.answers.forEach((answer, index) => {
+            const explanationContainer = document.querySelector(`#quiz-${instanceId}-answer-container-${index}`);
+            if (explanationContainer && answer.description) {
+                const p = document.createElement('p');
+                p.textContent = answer.description[lang] || answer.description.en;
+                explanationContainer.appendChild(p);
+            }
+        });
     }
-    return true; // Indicate correct answer
+
+    return isCorrect;
   }),
 }));
 
 vi.mock('../quiz-engine/quiz-types/multiple-choice.js', () => ({
   buildUI: vi.fn((form, data, lang, ui, instanceId) => {
-    // Simulate adding a checkbox for multiple-choice
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.name = `quiz-${instanceId}-answer`;
-    input.id = `quiz-${instanceId}-answer-0`;
-    form.appendChild(input);
+    // Simulate adding checkboxes for multiple-choice
+    data.answers.forEach((answer, index) => {
+      const answerOptionDiv = document.createElement('div');
+      answerOptionDiv.className = 'answer-option';
+      answerOptionDiv.id = `quiz-${instanceId}-answer-container-${index}`;
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.name = `quiz-${instanceId}-answer`;
+      input.id = `quiz-${instanceId}-answer-${index}`;
+      input.value = index.toString();
+      answerOptionDiv.appendChild(input);
+
+      const label = document.createElement('label');
+      label.setAttribute('for', input.id);
+      label.textContent = data.answers[index].text[lang] || data.answers[index].text.en;
+      answerOptionDiv.appendChild(label);
+
+      form.appendChild(answerOptionDiv);
+    });
   }),
-  checkAnswer: vi.fn(() => true),
+  checkAnswer: vi.fn((form, data, lang, instanceId) => {
+    const selectedInputs = Array.from(form.querySelectorAll(`input[name="quiz-${instanceId}-answer"]:checked`));
+    const selectedIndices = selectedInputs.map(input => parseInt(input.value)).sort((a, b) => a - b);
+    const correctIndices = data.answers.map((answer, index) => answer.correct ? index : -1).filter(index => index !== -1).sort((a, b) => a - b);
+
+    const isCorrect = JSON.stringify(selectedIndices) === JSON.stringify(correctIndices);
+
+    // Simulate showing result message
+    const messagesContainer = form.parentElement.querySelector('div');
+    if (messagesContainer) {
+        const resultElement = document.createElement('p');
+        resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect.';
+        messagesContainer.innerHTML = '';
+        messagesContainer.appendChild(resultElement);
+    }
+
+    // Simulate showing explanation if configured
+    const config = data.config || {};
+    if (config.showExplanation === 'selected') {
+        selectedIndices.forEach(selectedIndex => {
+            const explanationContainer = document.querySelector(`#quiz-${instanceId}-answer-container-${selectedIndex}`);
+            if (explanationContainer && data.answers[selectedIndex].description) {
+                const p = document.createElement('p');
+                p.textContent = data.answers[selectedIndex].description[lang] || data.answers[selectedIndex].description.en;
+                explanationContainer.appendChild(p);
+            }
+        });
+    } else if (config.showExplanation === 'all') {
+        data.answers.forEach((answer, index) => {
+            const explanationContainer = document.querySelector(`#quiz-${instanceId}-answer-container-${index}`);
+            if (explanationContainer && answer.description) {
+                const p = document.createElement('p');
+                p.textContent = answer.description[lang] || answer.description.en;
+                explanationContainer.appendChild(p);
+            }
+        });
+    }
+
+    return isCorrect;
+  }),
 }));
 
 vi.mock('../quiz-engine/quiz-types/input-field.js', () => ({
@@ -69,7 +137,30 @@ vi.mock('../quiz-engine/quiz-types/input-field.js', () => ({
     input.id = `quiz-${instanceId}-answer-input`;
     form.appendChild(input);
   }),
-  checkAnswer: vi.fn(() => true),
+  checkAnswer: vi.fn((form, data, lang, instanceId) => {
+    const inputField = form.querySelector(`#quiz-${instanceId}-answer-input`);
+    const userAnswer = inputField.value.trim(); // Trim whitespace as per functional requirements
+    const correctAnswer = data.answer[lang] || data.answer.en; // Use data.answer, not data.answers[0].text
+    const caseSensitive = data.config.caseSensitive !== false; // Default to true if not specified
+
+    let isCorrect = false;
+    if (caseSensitive) {
+      isCorrect = userAnswer === correctAnswer;
+    } else {
+      isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+    }
+
+    // Simulate showing result message
+    const messagesContainer = form.parentElement.querySelector('div');
+    if (messagesContainer) {
+        const resultElement = document.createElement('p');
+        resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect.';
+        messagesContainer.innerHTML = '';
+        messagesContainer.appendChild(resultElement);
+    }
+
+    return isCorrect;
+  }),
 }));
 
 // --- Mocks and Helpers ---
@@ -184,5 +275,131 @@ describe('Quiz Engine - Internationalization (i18n)', () => {
         const desc = document.querySelector('#quiz-1-answer-container-0 p');
         expect(desc).not.toBeNull();
         expect(desc.textContent).toBe('Correct, h1 is the most important.');
+    });
+});
+
+describe('Quiz Engine - Core Logic', () => {
+
+    // Test for single-choice correct answer
+    it('should show "Correct!" for a correct single-choice answer', async () => {
+        await initQuiz('sc-base.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const firstAnswerInput = quizContainer.querySelector('#quiz-1-answer-0'); // Correct answer
+        const checkButton = quizContainer.querySelector('button');
+
+        firstAnswerInput.click();
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Correct!');
+    });
+
+    // Test for single-choice incorrect answer
+    it('should show "Incorrect." for an incorrect single-choice answer', async () => {
+        await initQuiz('sc-base.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const secondAnswerInput = quizContainer.querySelector('#quiz-1-answer-1'); // Incorrect answer
+        const checkButton = quizContainer.querySelector('button');
+
+        secondAnswerInput.click();
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Incorrect.');
+    });
+
+    // Test for multiple-choice correct answer
+    it('should show "Correct!" for a correct multiple-choice answer', async () => {
+        await initQuiz('mc-base.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const firstAnswerInput = quizContainer.querySelector('#quiz-1-answer-0'); // Correct: <div>
+        const thirdAnswerInput = quizContainer.querySelector('#quiz-1-answer-2');  // Correct: <p>
+        const checkButton = quizContainer.querySelector('button');
+
+        firstAnswerInput.click();
+        thirdAnswerInput.click();
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Correct!');
+    });
+
+    // Test for multiple-choice incorrect answer
+    it('should show "Incorrect." for an incorrect multiple-choice answer', async () => {
+        await initQuiz('mc-base.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const firstAnswerInput = quizContainer.querySelector('#quiz-1-answer-0'); // Correct: <div>
+        const secondAnswerInput = quizContainer.querySelector('#quiz-1-answer-1'); // Incorrect: <span>
+        const checkButton = quizContainer.querySelector('button');
+
+        firstAnswerInput.click(); // Select a correct one
+        secondAnswerInput.click(); // Select an incorrect one
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Incorrect.');
+    });
+
+    // Test for input-field correct answer (case-insensitive)
+    it('should show "Correct!" for a correct input-field answer (case-insensitive)', async () => {
+        await initQuiz('if-mod.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const inputField = quizContainer.querySelector('#quiz-1-answer-input');
+        const checkButton = quizContainer.querySelector('button');
+
+        inputField.value = 'cSS'; // Case-insensitive correct answer
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Correct!');
+    });
+
+    // Test for input-field incorrect answer
+    it('should show "Incorrect." for an incorrect input-field answer', async () => {
+        await initQuiz('if-mod.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const inputField = quizContainer.querySelector('#quiz-1-answer-input');
+        const checkButton = quizContainer.querySelector('button');
+
+        inputField.value = 'wrong'; // Incorrect answer
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Incorrect.');
+    });
+
+    // Test for input-field correct answer (case-sensitive)
+    it('should show "Correct!" for a correct input-field answer (case-sensitive)', async () => {
+        await initQuiz('if-base.json', 'en');
+
+        const quizContainer = document.querySelector('.quiz-container');
+        const inputField = quizContainer.querySelector('#quiz-1-answer-input');
+        const checkButton = quizContainer.querySelector('button');
+
+        inputField.value = 'CSS'; // Case-sensitive correct answer
+        checkButton.click();
+
+        await new Promise(process.nextTick);
+
+        const resultElement = quizContainer.querySelector('p');
+        expect(resultElement.textContent).toBe('Correct!');
     });
 });
