@@ -536,3 +536,111 @@ describe('Quiz Engine - Explanation Logic', () => {
         expect(explanation).toBeNull();
     });
 });
+
+describe('Quiz Engine - "Try Again" Button', () => {
+    it('should display "Try Again" button on incorrect answer if configured', async () => {
+        await initQuiz('sc-base.json', 'en'); // This quiz now has showTryAgainButton: true
+
+        // Simulate incorrect answer
+        document.querySelector('#quiz-1-answer-1').click();
+        document.querySelector('button[type="button"]').click();
+        await new Promise(process.nextTick);
+
+        const tryAgainButton = document.querySelector('button[type="button"]');
+        expect(tryAgainButton).not.toBeNull();
+        expect(tryAgainButton.textContent).toBe('Try Again');
+    });
+
+    it('should NOT display "Try Again" button on correct answer', async () => {
+        await initQuiz('sc-base.json', 'en');
+
+        // Simulate correct answer
+        document.querySelector('#quiz-1-answer-0').click();
+        document.querySelector('button[type="button"]').click();
+        await new Promise(process.nextTick);
+
+        const resultMessage = document.querySelector('p');
+        expect(resultMessage.textContent).toBe('Correct!');
+        
+        // The "Check Answer" button is hidden, not removed. We need to check
+        // that no *visible* button has the "Try Again" text.
+        const buttons = document.querySelectorAll('button[type="button"]');
+        let tryAgainButtonVisible = false;
+        buttons.forEach(button => {
+            if (button.textContent === 'Try Again' && button.style.display !== 'none') {
+                tryAgainButtonVisible = true;
+            }
+        });
+        expect(tryAgainButtonVisible).toBe(false);
+    });
+
+    it('should NOT display "Try Again" button if not configured', async () => {
+        // We need a quiz file without the "showTryAgainButton" flag.
+        // Let's use sc-extension.json which doesn't have it.
+        await initQuiz('sc-extension.json', 'en');
+
+        // Simulate incorrect answer
+        document.querySelector('#quiz-1-answer-1').click();
+        document.querySelector('button[type="button"]').click();
+        await new Promise(process.nextTick);
+
+        // Check the main result message, ignoring any additional explanation text
+        const resultMessage = document.querySelector('.quiz-container > div > p');
+        expect(resultMessage.textContent).toBe('Incorrect.');
+
+        const buttons = document.querySelectorAll('button[type="button"]');
+        let tryAgainButtonVisible = false;
+        buttons.forEach(button => {
+            if (button.textContent === 'Try Again' && button.style.display !== 'none') {
+                tryAgainButtonVisible = true;
+            }
+        });
+        expect(tryAgainButtonVisible).toBe(false);
+    });
+
+    it('should reset the quiz when "Try Again" button is clicked', async () => {
+        await initQuiz('sc-base.json', 'en');
+
+        // 1. Give an incorrect answer
+        const incorrectAnswerInput = document.querySelector('#quiz-1-answer-1');
+        incorrectAnswerInput.click();
+        document.querySelector('button[type="button"]').click();
+        await new Promise(process.nextTick);
+
+        // 2. Verify the "Try Again" button is there
+        let tryAgainButton = document.querySelector('button[type="button"]');
+        expect(tryAgainButton).not.toBeNull();
+        expect(tryAgainButton.textContent).toBe('Try Again');
+        
+        // All inputs should be disabled
+        document.querySelectorAll('input').forEach(input => {
+            expect(input.disabled).toBe(true);
+        });
+
+        // 3. Click "Try Again"
+        tryAgainButton.click();
+        await new Promise(process.nextTick);
+
+        // 4. Verify the quiz is reset
+        // The "Check Answer" button should be back
+        const checkButton = document.querySelector('button[type="button"]');
+        expect(checkButton).not.toBeNull();
+        expect(checkButton.textContent).toBe('Check Answer');
+
+        // The result message and "Try Again" button should be gone
+        const resultMessage = document.querySelector('p');
+        expect(resultMessage).toBeNull();
+        tryAgainButton = document.querySelector('button:last-child'); // Re-query
+        expect(tryAgainButton.textContent).not.toBe('Try Again');
+
+
+        // Inputs should be enabled again
+        document.querySelectorAll('input').forEach(input => {
+            expect(input.disabled).toBe(false);
+        });
+
+        // Inputs should be cleared (unchecked)
+        const selectedInput = document.querySelector('input:checked');
+        expect(selectedInput).toBeNull();
+    });
+});

@@ -1,6 +1,7 @@
 {
   "config": {
     "type": "single-choice",
+    "showTryAgainButton": true,
     "showExplanation": "none"
   },
   "question": {
