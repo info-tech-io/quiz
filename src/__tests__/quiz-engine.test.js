@@ -94,16 +94,7 @@ vi.mock('../quiz-engine/quiz-types/multiple-choice.js', () => ({
 
     const isCorrect = JSON.stringify(selectedIndices) === JSON.stringify(correctIndices);
 
-    // Simulate showing result message
-    const messagesContainer = form.parentElement.querySelector('div');
-    if (messagesContainer) {
-        const resultElement = document.createElement('p');
-        resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect.';
-        messagesContainer.innerHTML = '';
-        messagesContainer.appendChild(resultElement);
-    }
-
-    // Simulate showing explanation if configured
+    // Simulate showing explanation if configured (Corrected mock)
     const config = data.config || {};
     if (config.showExplanation === 'selected') {
         selectedIndices.forEach(selectedIndex => {
@@ -141,13 +132,21 @@ vi.mock('../quiz-engine/quiz-types/input-field.js', () => ({
     const inputField = form.querySelector(`#quiz-${instanceId}-answer-input`);
     const userAnswer = inputField.value.trim(); // Trim whitespace as per functional requirements
     const correctAnswer = data.answer[lang] || data.answer.en; // Use data.answer, not data.answers[0].text
-    const caseSensitive = data.config.caseSensitive !== false; // Default to true if not specified
+    const config = data.config || {};
+    const caseSensitive = config.caseSensitive !== false; // Default to true if not specified
 
     let isCorrect = false;
     if (caseSensitive) {
       isCorrect = userAnswer === correctAnswer;
     } else {
       isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+    }
+
+    // Simulate showing explanation on error from input-field.js
+    if (!isCorrect && config.showExplanationOnError && data.explanation) {
+        const explanationElement = document.createElement('p');
+        explanationElement.textContent = data.explanation[lang] || data.explanation.en;
+        form.appendChild(explanationElement);
     }
 
     // Simulate showing result message
@@ -401,5 +400,139 @@ describe('Quiz Engine - Core Logic', () => {
 
         const resultElement = quizContainer.querySelector('p');
         expect(resultElement.textContent).toBe('Correct!');
+    });
+});
+
+describe('Quiz Engine - Explanation Logic', () => {
+    it('should display explanation only for the selected answer when config is "selected"', async () => {
+        await initQuiz('sc-extension.json', 'en'); // This quiz uses showExplanation: "selected"
+
+        // Simulate user selecting the second (incorrect) answer
+        const secondAnswerInput = document.querySelector('#quiz-1-answer-1');
+        secondAnswerInput.click();
+        
+        const checkButton = document.querySelector('button');
+        checkButton.click();
+        
+        await new Promise(process.nextTick); // Allow DOM updates
+
+        const firstExplanation = document.querySelector('#quiz-1-answer-container-0 p');
+        const secondExplanation = document.querySelector('#quiz-1-answer-container-1 p');
+
+        // The explanation for the unselected answer should NOT be present
+        expect(firstExplanation).toBeNull(); 
+        
+        // The explanation for the selected answer SHOULD be present
+        expect(secondExplanation).not.toBeNull();
+        expect(secondExplanation.textContent).toBe('Incorrect, h6 is the least important.');
+    });
+
+    it('should display explanations for all answers when config is "all"', async () => {
+        await initQuiz('sc-extension-mod.json', 'en'); // This quiz uses showExplanation: "all"
+
+        // Simulate user selecting the first answer
+        const firstAnswerInput = document.querySelector('#quiz-1-answer-0');
+        firstAnswerInput.click();
+        
+        const checkButton = document.querySelector('button');
+        checkButton.click();
+        
+        await new Promise(process.nextTick); // Allow DOM updates
+
+        const firstExplanation = document.querySelector('#quiz-1-answer-container-0 p');
+        const secondExplanation = document.querySelector('#quiz-1-answer-container-1 p');
+
+        // Explanations for ALL answers should be present
+        expect(firstExplanation).not.toBeNull();
+        expect(firstExplanation.textContent).toBe('Correct, h1 is the most important.');
+        
+        expect(secondExplanation).not.toBeNull();
+        expect(secondExplanation.textContent).toBe('Incorrect, h6 is the least important.');
+    });
+
+    it('should display explanations only for selected answers in multiple-choice when config is "selected"', async () => {
+        await initQuiz('mc-extension.json', 'en'); // Uses showExplanation: "selected"
+
+        // Simulate user selecting one correct (index 0) and one incorrect (index 1) answer
+        document.querySelector('#quiz-1-answer-0').click();
+        document.querySelector('#quiz-1-answer-1').click();
+        
+        document.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        const explanation0 = document.querySelector('#quiz-1-answer-container-0 p');
+        const explanation1 = document.querySelector('#quiz-1-answer-container-1 p');
+        const explanation2 = document.querySelector('#quiz-1-answer-container-2 p');
+
+        // Explanations should exist for selected answers
+        expect(explanation0).not.toBeNull();
+        expect(explanation0.textContent).toBe('Correct, div is a block tags.');
+        expect(explanation1).not.toBeNull();
+        expect(explanation1.textContent).toBe('Incorrect, span is a line tag.');
+
+        // Explanation should NOT exist for the unselected answer
+        expect(explanation2).toBeNull();
+    });
+
+    it('should display explanations for all answers in multiple-choice when config is "all"', async () => {
+        await initQuiz('mc-extension-mod.json', 'en'); // Uses showExplanation: "all"
+
+        // Simulate user selecting one answer
+        document.querySelector('#quiz-1-answer-0').click();
+        
+        document.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        const explanation0 = document.querySelector('#quiz-1-answer-container-0 p');
+        const explanation1 = document.querySelector('#quiz-1-answer-container-1 p');
+        const explanation2 = document.querySelector('#quiz-1-answer-container-2 p');
+
+        // Explanations should exist for ALL answers, regardless of selection
+        expect(explanation0).not.toBeNull();
+        expect(explanation0.textContent).toBe('Correct, div is a block tags.');
+        expect(explanation1).not.toBeNull();
+        expect(explanation1.textContent).toBe('Incorrect, span is a line tag.');
+        expect(explanation2).not.toBeNull();
+        expect(explanation2.textContent).toBe('Correct, p is a block tags.');
+    });
+
+    it('should display explanation for input-field on incorrect answer when configured', async () => {
+        await initQuiz('if-extension.json', 'en'); // Uses showExplanationOnError: true
+
+        const inputField = document.querySelector('#quiz-1-answer-input');
+        inputField.value = 'wrong answer';
+        
+        document.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        const explanation = document.querySelector('form p');
+        expect(explanation).not.toBeNull();
+        expect(explanation.textContent).toBe('The correct answer is CSS.');
+    });
+
+    it('should NOT display explanation for input-field on correct answer', async () => {
+        await initQuiz('if-extension.json', 'en'); // Uses showExplanationOnError: true
+
+        const inputField = document.querySelector('#quiz-1-answer-input');
+        inputField.value = 'CSS'; // Correct answer
+        
+        document.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        const explanation = document.querySelector('form p');
+        expect(explanation).toBeNull();
+    });
+
+    it('should NOT display explanation for input-field if showExplanationOnError is false', async () => {
+        await initQuiz('if-base.json', 'en'); // Uses showExplanationOnError: false
+
+        const inputField = document.querySelector('#quiz-1-answer-input');
+        inputField.value = 'wrong answer';
+        
+        document.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        const explanation = document.querySelector('form p');
+        expect(explanation).toBeNull();
     });
 });
