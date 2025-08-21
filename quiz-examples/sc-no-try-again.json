@@ -1,8 +1,8 @@
 {
   "config": {
     "type": "single-choice",
-    "showTryAgainButton": true,
-    "showExplanation": "all"
+    "showExplanation": "selected",
+    "showTryAgainButton": false
   },
   "question": {
     "en": "Which tag is the most important?",
@@ -10,7 +10,10 @@
   },
   "answers": [
     {
-      "text": { "ru": "<h1>", "en": "<h1>" },
+      "text": {
+        "en": "<h1>",
+        "ru": "<h1>"
+      },
       "correct": true,
       "description": {
         "en": "Correct, h1 is the most important.",
@@ -18,7 +21,10 @@
       }
     },
     {
-      "text": { "ru": "<h6>", "en": "<h6>" },
+      "text": {
+        "en": "<h6>",
+        "ru": "<h6>"
+      },
       "correct": false,
       "description": {
         "en": "Incorrect, h6 is the least important.",

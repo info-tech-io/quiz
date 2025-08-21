@@ -575,9 +575,8 @@ describe('Quiz Engine - "Try Again" Button', () => {
     });
 
     it('should NOT display "Try Again" button if not configured', async () => {
-        // We need a quiz file without the "showTryAgainButton" flag.
-        // Let's use sc-extension.json which doesn't have it.
-        await initQuiz('sc-extension.json', 'en');
+        // Let's use sc-no-try-again.json which has the flag set to false.
+        await initQuiz('sc-no-try-again.json', 'en');
 
         // Simulate incorrect answer
         document.querySelector('#quiz-1-answer-1').click();
