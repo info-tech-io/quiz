@@ -643,3 +643,105 @@ describe('Quiz Engine - "Try Again" Button', () => {
         expect(selectedInput).toBeNull();
     });
 });
+
+// Helper to initialize multiple quizzes
+const initMultipleQuizzes = async (quizFileNames, lang) => {
+    if (lang !== undefined) {
+        vi.spyOn(i18n, 'getLang').mockReturnValue(lang);
+    }
+
+    // Set up DOM for multiple quizzes
+    document.body.innerHTML = quizFileNames
+        .map(fileName => `<div class="quiz-container" data-quiz-src="/quiz-examples/${fileName}"></div>`)
+        .join('<hr>');
+
+    // Trigger the DOMContentLoaded event and wait for quizzes to initialize
+    await initializeQuizzes();
+    await new Promise(process.nextTick); // Allow promises to resolve
+};
+
+describe('Quiz Engine - Multi-Quiz Isolation', () => {
+    it('should isolate explanation logic between multiple quizzes', async () => {
+        // Using sc-base (no explanation) and sc-extension (has explanation)
+        await initMultipleQuizzes(['sc-base.json', 'sc-extension.json'], 'en');
+
+        const quizContainers = document.querySelectorAll('.quiz-container');
+        const firstQuizContainer = quizContainers[0];
+        const secondQuizContainer = quizContainers[1];
+
+        // Action: Select an answer and check it in the *second* quiz (instance ID 2)
+        const secondQuizRadioButton = secondQuizContainer.querySelector('#quiz-2-answer-0');
+        const secondQuizCheckButton = secondQuizContainer.querySelector('button');
+
+        secondQuizRadioButton.click();
+        secondQuizCheckButton.click();
+        await new Promise(process.nextTick);
+
+        // Assertion 1: The first quiz should NOT have any explanation text.
+        const firstQuizExplanation = firstQuizContainer.querySelector('[id^="quiz-1-answer-container-"] p');
+        expect(firstQuizExplanation).toBeNull();
+
+        // Assertion 2: The second quiz SHOULD have an explanation for the selected answer.
+        const secondQuizExplanation = secondQuizContainer.querySelector('#quiz-2-answer-container-0 p');
+        expect(secondQuizExplanation).not.toBeNull();
+        expect(secondQuizExplanation.textContent).toContain('Correct, h1 is the most important.');
+    });
+
+    it('should not change the state of other quizzes when one is answered', async () => {
+        await initMultipleQuizzes(['sc-extension.json', 'sc-base.json'], 'en');
+
+        const [firstQuizContainer, secondQuizContainer] = document.querySelectorAll('.quiz-container');
+
+        // Action: Answer the first quiz incorrectly to trigger maximum state change
+        firstQuizContainer.querySelector('#quiz-1-answer-1').click(); // Incorrect answer
+        firstQuizContainer.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        // Assertions: Check that the second quiz is completely unchanged
+        const secondQuizCheckButton = secondQuizContainer.querySelector('button');
+        expect(secondQuizCheckButton.textContent).toBe('Check Answer');
+        expect(secondQuizCheckButton.style.display).not.toBe('none');
+
+        const secondQuizInputs = secondQuizContainer.querySelectorAll('input');
+        secondQuizInputs.forEach(input => {
+            expect(input.disabled).toBe(false);
+            expect(input.checked).toBe(false);
+        });
+
+        const secondQuizResultMessage = secondQuizContainer.querySelector('.quiz-container > div > p');
+        expect(secondQuizResultMessage).toBeNull();
+    });
+
+    it('should maintain the state of a completed quiz after another quiz is answered', async () => {
+        await initMultipleQuizzes(['sc-extension.json', 'if-mod.json'], 'en');
+        const [firstQuizContainer, secondQuizContainer] = document.querySelectorAll('.quiz-container');
+
+        // Action Part 1: Complete the first quiz (incorrectly)
+        firstQuizContainer.querySelector('#quiz-1-answer-1').click();
+        firstQuizContainer.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        // "Snapshot" the state of the first quiz
+        const firstQuizResultElement = Array.from(firstQuizContainer.querySelectorAll('div > p')).find(p => p.textContent === 'Incorrect.');
+        const firstQuizInputs = firstQuizContainer.querySelectorAll('input');
+        const firstQuizTryAgainButton = Array.from(firstQuizContainer.querySelectorAll('button')).find(b => b.textContent === 'Try Again');
+
+        expect(firstQuizResultElement).not.toBeUndefined(); // Check that the "Incorrect." message exists
+        expect(firstQuizTryAgainButton).not.toBeUndefined();
+        firstQuizInputs.forEach(input => expect(input.disabled).toBe(true));
+
+        // Action Part 2: Complete the second quiz
+        secondQuizContainer.querySelector('input[type="text"]').value = 'css';
+        secondQuizContainer.querySelector('button').click();
+        await new Promise(process.nextTick);
+
+        // Assertions: Re-check the state of the first quiz to ensure it hasn't changed
+        const firstQuizResultElementAfter = Array.from(firstQuizContainer.querySelectorAll('div > p')).find(p => p.textContent === 'Incorrect.');
+        const firstQuizInputsAfter = firstQuizContainer.querySelectorAll('input');
+        const firstQuizTryAgainButtonAfter = Array.from(firstQuizContainer.querySelectorAll('button')).find(b => b.textContent === 'Try Again');
+
+        expect(firstQuizResultElementAfter).not.toBeUndefined();
+        expect(firstQuizTryAgainButtonAfter).not.toBeUndefined();
+        firstQuizInputsAfter.forEach(input => expect(input.disabled).toBe(true));
+    });
+});
