@@ -2,6 +2,7 @@
   "config": {
     "type": "input-field",
     "caseSensitive": false,
+    "showTryAgainButton": true,
     "showExplanationOnError": true
   },
   "question": {
