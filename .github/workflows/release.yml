@@ -1,0 +1,215 @@
+name: Release Quiz Engine
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.1)'
+        required: true
+        default: 'v1.0.1'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: 'Validate Quiz Engine'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Validate quiz examples
+      run: |
+        echo "🔍 Validating quiz JSON examples..."
+        find quiz-examples -name "*.json" -type f | while read file; do
+          if jq empty "$file" 2>/dev/null; then
+            echo "✅ $file - valid JSON"
+          else
+            echo "❌ $file - invalid JSON"
+            exit 1
+          fi
+        done
+        
+    - name: Check Quiz Engine files
+      run: |
+        echo "📋 Checking required Quiz Engine files..."
+        test -f src/quiz-engine/quiz-engine.mjs && echo "✅ Main engine file exists" || exit 1
+        test -f src/quiz-engine/config.js && echo "✅ Config file exists" || exit 1  
+        test -f src/quiz-engine/i18n.js && echo "✅ i18n file exists" || exit 1
+        test -f src/quiz-engine/locales/en.json && echo "✅ English locales exist" || exit 1
+        test -f src/quiz-engine/locales/ru.json && echo "✅ Russian locales exist" || exit 1
+        
+        echo "🎯 Quiz Engine validation complete!"
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    name: 'Create Release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Get version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Generate changelog
+      id: changelog
+      run: |
+        version="${{ steps.get_version.outputs.version }}"
+        echo "📝 Generating changelog for $version..."
+        
+        # Get previous tag
+        prev_tag=$(git tag --sort=-version:refname | grep -v "^$version$" | head -n1)
+        
+        if [ -z "$prev_tag" ]; then
+          echo "🎉 Initial release"
+          changelog="🎯 **Initial release of Quiz Engine $version**
+
+**Features:**
+- Interactive quiz system for educational platforms
+- Support for 3 quiz types: Single Choice, Multiple Choice, Input Field  
+- Multi-language support (English/Russian)
+- JSON-based quiz configuration
+- Integration with Hugo static sites
+
+**Included Examples:**
+- 11 ready-to-use quiz examples
+- Complete integration documentation
+- Test suite with 25+ tests
+
+**Integration:**
+- Git submodule support
+- HTML container-based integration
+- Automatic quiz initialization"
+        else
+          echo "📋 Changes since $prev_tag:"
+          changelog="🔄 **Quiz Engine $version**
+
+**Changes since $prev_tag:**
+$(git log --pretty=format:"- %s" $prev_tag..$version | head -20)
+
+**Integration:**
+- Git submodule support for Hugo modules
+- HTML container-based quiz integration
+- JavaScript ES6 module loading
+
+**Documentation:**
+- Complete integration guide in \`docs/ru/INTEGRATION.md\`
+- Functional requirements and configuration docs
+- Ready-to-use examples in \`quiz-examples/\`"
+        fi
+        
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$changelog" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: 'Quiz Engine ${{ steps.get_version.outputs.version }}'
+        body: ${{ steps.changelog.outputs.changelog }}
+        draft: false
+        prerelease: false
+
+  notify-hugo-base:
+    needs: [validate, release]
+    runs-on: ubuntu-latest
+    name: 'Notify Hugo Base'
+    if: success()
+    
+    steps:
+    - name: Trigger hugo-base update
+      run: |
+        echo "🔔 Notifying hugo-base about Quiz Engine release..."
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/info-tech-io/hugo-base/dispatches \
+          -d '{
+            "event_type": "quiz-engine-updated",
+            "client_payload": {
+              "version": "${{ steps.get_version.outputs.version }}",
+              "repository": "${{ github.repository }}",
+              "release_url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.version }}",
+              "triggered_by": "Quiz Engine release workflow"
+            }
+          }' || echo "⚠️ Could not notify hugo-base (this is not critical)"
+
+  notify-platform-hub:
+    needs: [validate, release]
+    runs-on: ubuntu-latest  
+    name: 'Notify Platform Hub'
+    if: success()
+    
+    steps:
+    - name: Trigger platform-hub update (when available)
+      run: |
+        echo "🔔 Notifying platform-hub about Quiz Engine release..."
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/info-tech-io/platform-hub/dispatches \
+          -d '{
+            "event_type": "quiz-engine-updated", 
+            "client_payload": {
+              "component": "quiz-engine",
+              "version": "${{ steps.get_version.outputs.version }}",
+              "repository": "${{ github.repository }}",
+              "release_url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.version }}",
+              "updated_at": "${{ github.event.head_commit.timestamp }}"
+            }
+          }' || echo "⚠️ Could not notify platform-hub (repository may not exist yet)"
+
+  summary:
+    needs: [validate, release, notify-hugo-base, notify-platform-hub]
+    runs-on: ubuntu-latest
+    name: 'Release Summary'
+    if: always()
+    
+    steps:
+    - name: Print release summary
+      run: |
+        echo "🎉 **Quiz Engine Release Summary**"
+        echo ""
+        echo "✅ **Validation:** ${{ needs.validate.result }}"
+        echo "✅ **Release:** ${{ needs.release.result }}" 
+        echo "🔔 **Hugo Base Notification:** ${{ needs.notify-hugo-base.result }}"
+        echo "🔔 **Platform Hub Notification:** ${{ needs.notify-platform-hub.result }}"
+        echo ""
+        if [ "${{ needs.validate.result }}" = "success" ] && [ "${{ needs.release.result }}" = "success" ]; then
+          echo "🎯 **Quiz Engine successfully released!**"
+          echo "📦 **Version:** ${{ steps.get_version.outputs.version }}"
+          echo "🔗 **Release URL:** ${{ github.server_url }}/${{ github.repository }}/releases"
+        else
+          echo "❌ **Release failed. Check the logs above.**"
+          exit 1
+        fi
