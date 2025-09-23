@@ -1,55 +1,70 @@
 ---
 title: "Quiz Engine Documentation"
-description: "Интерактивная система тестирования для образовательных платформ"
+description: "Flexible JavaScript library for creating interactive educational quizzes and tests"
 date: 2025-09-22
 ---
 
 # Quiz Engine
 
-Интерактивная система тестирования, разработанная для образовательных платформ. Quiz Engine предоставляет гибкий и мощный инструмент для создания различных типов тестов и квизов.
+A powerful, multilingual JavaScript library for creating interactive educational quizzes and tests. Designed for developers who want to add engaging testing capabilities to their educational platforms.
 
-## Быстрый старт
+## Quick Start
 
-1. [Установка и настройка](/getting-started/installation/)
-2. [Создание первого квиза](/getting-started/quickstart/)
-3. [Основные концепции](/getting-started/concepts/)
+1. **[Getting Started](/quiz/getting-started/)** - Installation and your first quiz
+2. **[Configuration Guide](/quiz/user-guide/configuration/)** - Learn all available options
+3. **[Examples](/quiz/examples/)** - See Quiz Engine in action
 
-## Возможности
+## Key Features
 
-- **Множественные типы вопросов**: выбор из вариантов, да/нет, ввод текста
-- **Система оценок**: гибкая настройка подсчета баллов
-- **Адаптивный дизайн**: работает на всех устройствах
-- **JSON конфигурация**: простая настройка через конфигурационные файлы
-- **Hugo интеграция**: встраивается в статические сайты
-- **Локализация**: поддержка множественных языков
+🌍 **Multilingual Support** - Built-in internationalization (i18n) with automatic language detection
+🎯 **Multiple Question Types** - Single choice, multiple choice, text input, true/false
+⚙️ **Flexible Configuration** - JSON-based configuration with extensive customization options
+🎨 **Themeable** - Multiple built-in themes and custom CSS support
+📱 **Responsive Design** - Works perfectly on all devices and screen sizes
+🧪 **Well Tested** - Comprehensive test suite with Jest and cross-browser testing
+🚀 **Performance Optimized** - Lightweight (~50KB minified) with zero dependencies
+♿ **Accessible** - WCAG compliant with full keyboard navigation support
 
-## Разделы документации
+## Documentation Sections
 
-### 📖 Руководство пользователя
-Пошаговые инструкции по созданию и настройке квизов.
-- [Перейти к руководству](/guide/)
+### 📚 User Guide
+Complete guides for integrating and using Quiz Engine in your projects.
+- **[Configuration](/quiz/user-guide/configuration/)** - All available configuration options
+- **[Question Types](/quiz/user-guide/question-types/)** - Different quiz formats
+- **[Internationalization](/quiz/user-guide/i18n/)** - Multi-language setup
+- **[Styling & Themes](/quiz/user-guide/styling/)** - Customize appearance
 
-### 🔧 API Справочник
-Подробное описание конфигурации JSON и параметров.
-- [Перейти к API](/api/)
+### 🔧 Developer Documentation
+Technical documentation for developers and contributors.
+- **[API Reference](/quiz/developer/api/)** - Complete API documentation
+- **[Architecture](/quiz/developer/architecture/)** - System design and architecture
+- **[Building & Testing](/quiz/developer/building/)** - Development setup guide
 
-### 💡 Примеры
-Готовые примеры квизов для различных сценариев.
-- [Посмотреть примеры](/examples/)
+### 🤝 Contributing
+Help improve Quiz Engine for everyone.
+- **[Contributing Guide](/quiz/contributing/)** - How to contribute to the project
+- **[Code of Conduct](/quiz/contributing/code-of-conduct/)** - Community guidelines
 
-### ❓ Часто задаваемые вопросы
-Ответы на популярные вопросы по использованию.
-- [Читать FAQ](/faq/)
+## Technical Specifications
 
-## Технические характеристики
+- **Bundle Size**: ~50KB minified JavaScript
+- **Dependencies**: Zero external dependencies
+- **Browser Support**: All modern browsers (Chrome 60+, Firefox 55+, Safari 11+, Edge 79+)
+- **License**: MIT License
+- **Framework**: Vanilla JavaScript (works with any framework)
 
-- **Размер**: ~50KB минифицированного JS
-- **Зависимости**: Без внешних зависимостей
-- **Браузеры**: Поддержка всех современных браузеров
-- **Лицензия**: MIT
+## Getting Help
 
-## Нужна помощь?
+- **[GitHub Issues](https://github.com/info-tech-io/quiz/issues)** - Bug reports and feature requests
+- **[GitHub Discussions](https://github.com/info-tech-io/quiz/discussions)** - Community questions and chat
+- **[InfoTech.io](https://info-tech.io)** - Main organization website
 
-- [GitHub Issues](https://github.com/info-tech-io/quiz) - для багрепортов и предложений
-- [Discussions](https://github.com/info-tech-io/quiz/discussions) - обсуждения с сообществом
-- [InfoTech.io](https://info-tech.io) - основной сайт организации
+## Live Examples
+
+Quiz Engine is used in production by:
+- **[INFOTECHA](https://infotecha.ru)** - Interactive educational platform with Linux courses
+- **[Linux Modules](https://linux-base.infotecha.ru)** - Comprehensive Linux learning modules
+
+---
+
+**Ready to get started?** Check out our [Getting Started guide](/quiz/getting-started/) to create your first quiz in under 5 minutes!

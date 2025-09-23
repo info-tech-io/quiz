@@ -15,8 +15,8 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.PAT_TOKEN }}
-          repository: info-tech-io/infotecha
-          event-type: product-docs-updated
+          repository: info-tech-io/info-tech-io.github.io
+          event-type: quiz-docs-updated
           client-payload: |
             {
               "repository": "${{ github.repository }}",
