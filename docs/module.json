@@ -2,10 +2,11 @@
   "name": "quiz-engine-docs",
   "version": "1.0.0",
   "type": "documentation",
-  "build": {
+  "hugo_config": {
     "template": "documentation",
     "theme": "compose",
-    "components": ["compose-theme"]
+    "components": [],
+    "hugo_version": "0.110.0"
   },
   "site": {
     "title": "Quiz Engine Documentation",
@@ -20,7 +21,6 @@
     "destination": "quiz"
   },
   "build_settings": {
-    "hugo_version": "0.110.0",
     "enable_analytics": false,
     "enable_search": true
   }
