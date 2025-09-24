@@ -8,6 +8,8 @@ date: 2025-09-22
 
 A powerful, multilingual JavaScript library for creating interactive educational quizzes and tests. Designed for developers who want to add engaging testing capabilities to their educational platforms.
 
+<!-- Test change to trigger workflow - 2025-09-24 -->
+
 ## Quick Start
 
 1. **[Getting Started](/quiz/getting-started/)** - Installation and your first quiz
