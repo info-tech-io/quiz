@@ -72,4 +72,4 @@ Quiz Engine is used in production by:
 **Ready to get started?** Check out our [Getting Started guide](/quiz/getting-started/) to create your first quiz in under 5 minutes!
 <!-- Test build.sh fix - 2025-09-24 17:55:55 -->
 
-<!-- FINAL TEST: All module.json files fixed - 2025-09-24 18:19:08 -->
+<!-- CRITICAL FIXES APPLIED - Testing hugo 0.148.0 + improved error reporting - 2025-09-26 08:50:00 -->
