@@ -11,14 +11,14 @@
   "site": {
     "title": "Quiz Engine Documentation",
     "description": "Interactive quiz system for educational platforms",
-    "baseURL": "https://quiz.info-tech.io",
+    "baseURL": "https://info-tech-io.github.io",
     "language": "ru",
     "author": "InfoTech.io Team",
     "product_name": "Quiz Engine"
   },
   "content": {
     "source": "./content",
-    "destination": "quiz"
+    "destination": "docs/quiz"
   },
   "build_settings": {
     "enable_analytics": false,
