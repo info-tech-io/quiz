@@ -80,3 +80,4 @@ Quiz Engine is used in production by:
 <!-- Test incremental deployment 1762109831 -->
 <!-- Test 1762153996 -->
 <!-- 🧪 TEST Issue #39 fix - federated-build.sh bounds checking - 2025-11-04 16:50 UTC -->
+<!-- 🔧 TEST Issue #11 fix - fallback strategy for missing gh-pages - 2025-11-04 17:15 UTC -->
